@@ -2,13 +2,16 @@
 #define SERVER_H
 
 #include <sys/socket.h>
+#include <unistd.h>
+#include <sys/epoll.h>
 #include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 
-#define SERVER_PORT 5959
+#define SERVER_PORT 5960
+#define MAX_EVENTS 10
 
 int create_server(int port);
 
