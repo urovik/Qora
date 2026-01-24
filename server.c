@@ -1,4 +1,5 @@
 #include "server.h"
+#include "storage.h"
 
 
 
@@ -85,12 +86,21 @@ int create_server(int port){
                 // Данные от клиента
                 char buffer[1024];
                 ssize_t bytes_read = read(events[i].data.fd, buffer, sizeof(buffer));
-                if (memcmp(buffer,"EXIT",4) == 0) {
+                if (memcmp(buffer,"EXIT",4) == 0 || memcmp(buffer,"exit",4) == 0) {
+
                     // Клиент отключился или ошибка
                     printf("Клиент отключился: fd=%d\n", events[i].data.fd);
                     epoll_ctl(epoll_fd, EPOLL_CTL_DEL, events[i].data.fd, NULL);
                     close(events[i].data.fd);
-                } else {
+                } 
+                if(memcmp(buffer,"SELECT",6) == 0 ||memcmp(buffer,"select",6) == 0 )
+                {
+                    // код SELECT
+                    handle_select_command(events[i].data.fd);
+                }
+                
+                else {
+
                     // Выводим полученные данные
                     printf("От клиента (fd=%d): %.*s\n", 
                            events[i].data.fd, (int)bytes_read, buffer);
