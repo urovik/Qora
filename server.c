@@ -7,6 +7,8 @@ int create_server(int port){
 
     struct sockaddr_in address;
     int new_socket,epoll_fd;
+    char filename[256];
+    char response_message[8192];
     socklen_t addrlen = sizeof(address);
 
     struct epoll_event event, events[MAX_EVENTS];
@@ -53,7 +55,7 @@ int create_server(int port){
         perror("epoll_ctl");
         exit(EXIT_FAILURE);
     }
-    printf("сервер запущен на порту %d",port);
+    printf("сервер запущен на порту %d\n",port);
 
     while (1)
     {
@@ -73,7 +75,15 @@ int create_server(int port){
                     perror("accept");
                     continue;
                 }
-                printf("Приветствую ты подключился к файловому хранилищу\n список команд:\nSELECT(посмотреть файлы)\nINSERT(добавить файл)\nдля отключения напиши EXIT\n");
+                memset(response_message, 0, sizeof(response_message));
+                snprintf(response_message, sizeof(response_message),
+                        "Приветствую, ты подключился к Qorasql\n"
+                        "Список команд:\n"
+                        "SELECT (посмотреть файлы)\n"
+                        "INSERT (добавить файл)\n"
+                        "EXIT (отключиться)\n"
+                        "CREATE (создать файл)\n");
+                write(conn_fd, response_message, strlen(response_message));
 
                 event.data.fd = conn_fd;
                 event.events = EPOLLIN;
@@ -83,20 +93,39 @@ int create_server(int port){
                     close(conn_fd);
                 }
             } else {
+                
+
                 // Данные от клиента
                 char buffer[1024];
                 ssize_t bytes_read = read(events[i].data.fd, buffer, sizeof(buffer));
-                if (memcmp(buffer,"EXIT",4) == 0 || memcmp(buffer,"exit",4) == 0) {
+                // добавить проверку на bytes_read == -1
+                if (strncmp(buffer,"EXIT",4) == 0 || strncmp(buffer,"exit",4) == 0) {
 
                     // Клиент отключился или ошибка
                     printf("Клиент отключился: fd=%d\n", events[i].data.fd);
                     epoll_ctl(epoll_fd, EPOLL_CTL_DEL, events[i].data.fd, NULL);
                     close(events[i].data.fd);
-                } 
-                if(memcmp(buffer,"SELECT",6) == 0 ||memcmp(buffer,"select",6) == 0 )
+                }
+                 
+                if(strncmp(buffer,"SELECT",6) == 0 || strncmp(buffer,"select",6) == 0 )
                 {
                     // код SELECT
                     handle_select_command(events[i].data.fd);
+                }
+
+                if(strncmp(buffer,"CREATE",6) == 0 || strncmp(buffer,"create",6) == 0)
+                {
+                    memset(response_message, 0, sizeof(response_message));
+                    snprintf(response_message,sizeof(response_message),"Введите имя файла для хранения данных не более 255 символов\n");
+                    write(events[i].data.fd,response_message,sizeof(response_message));
+                    read(events[i].data.fd,filename,sizeof(filename));
+                    if(strlen(filename) > 255)
+                    {
+                        memset(response_message, 0, sizeof(response_message));
+                        snprintf(response_message,sizeof(response_message),"Введите корректное имя файла");
+                        write(events[i].data.fd,response_message,strlen(response_message));
+                    }
+                    create_file_from_db(events[i].data.fd,filename);
                 }
                 
                 else {
@@ -106,8 +135,8 @@ int create_server(int port){
                            events[i].data.fd, (int)bytes_read, buffer);
 
                     // Отправляем ответ
-                    const char *response = "Сообщение получено!\n";
-                    write(events[i].data.fd, response, strlen(response));
+                    //const char *response = "Сообщение получено!\n";
+                    //write(events[i].data.fd, response, strlen(response));
                 }
             }
         }
@@ -131,3 +160,4 @@ int create_server(int port){
 
 
 }
+
