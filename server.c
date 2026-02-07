@@ -98,10 +98,15 @@ int create_server(int port){
                 // Данные от клиента
                 char buffer[1024];
                 ssize_t bytes_read = read(events[i].data.fd, buffer, sizeof(buffer));
-                // добавить проверку на bytes_read == -1
+                if(bytes_read <= 0)
+                {
+                    printf("Клиент отключился: fd=%d\n", events[i].data.fd);
+                    epoll_ctl(epoll_fd, EPOLL_CTL_DEL, events[i].data.fd, NULL);
+                    close(events[i].data.fd);
+                } 
                 if (strncmp(buffer,"EXIT",4) == 0 || strncmp(buffer,"exit",4) == 0) {
 
-                    // Клиент отключился или ошибка
+                    
                     printf("Клиент отключился: fd=%d\n", events[i].data.fd);
                     epoll_ctl(epoll_fd, EPOLL_CTL_DEL, events[i].data.fd, NULL);
                     close(events[i].data.fd);
@@ -131,8 +136,8 @@ int create_server(int port){
                 else {
 
                     // Выводим полученные данные
-                    printf("От клиента (fd=%d): %.*s\n", 
-                           events[i].data.fd, (int)bytes_read, buffer);
+                    //printf("От клиента (fd=%d): %.*s\n", 
+                    //       events[i].data.fd, (int)bytes_read, buffer);
 
                     // Отправляем ответ
                     //const char *response = "Сообщение получено!\n";
