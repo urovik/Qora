@@ -2,10 +2,6 @@
 #define LOGGER_H
 
 #include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <errno.h>
-#include <time.h>
 
 #define QORA_LOGS_FILENAME "qora_logs.txt"
 
@@ -20,11 +16,12 @@ typedef enum {
 } LogLevel;
 
 
-typedef struct 
+typedef struct Logger
 {
     FILE* output_file;
     LogLevel level; 
 } Logger;
+
 
 extern Logger global_logger;
 

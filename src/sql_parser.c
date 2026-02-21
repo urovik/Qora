@@ -1,42 +1,28 @@
-#include "storage.h"
+#include "sql_parser.h"
 
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <dirent.h>
+#include <string.h>
+#include <sys/epoll.h>
 
-void create_file_from_db(int client_fd, char filename[256])
+
+void execute_sql_command(const char sql_command[LEN_SQL_COMMAND])
 {
-    DIR* dir;
-    struct dirent* entry;
-    char response[8192] = "";
-    FILE* new_file;
-    char path_to_create_file[1024];
-
-    dir = opendir("./QORADATA");
-
-    if(!dir)
-    {
-        snprintf(response,sizeof(response),"выбранная директория не найдена\n");
-        write(client_fd,response,strlen(response));
-        return;
-    }
-    closedir(dir);
-    snprintf(path_to_create_file,sizeof(path_to_create_file),"./QORADATA/%s",filename);
-    new_file = fopen(path_to_create_file,"w+");
-
-    if(new_file != NULL)
-    {
-        snprintf(response,sizeof(response),"файл: %s cоздан\n",filename);
-        write(client_fd,response,strlen(response));
-        fclose(new_file);
+    if (strlen(sql_command) > LEN_SQL_COMMAND){
+        perror("Команда SQL слишком длинная");
         return;
     } 
-    else{
-        snprintf(response,sizeof(response),"Ошибка создания файла: %s\n",filename);
-        write(client_fd,response,strlen(response));
-        return;
-    }
+    // в работу вступает парсер SQL
+}
 
-
-    
+// перенести в отдельный файлик
+void handle_quit_command(int client_fd,int epoll_fd){
+    // добавить лог что клиент отключился
+    epoll_ctl(epoll_fd,EPOLL_CTL_DEL,client_fd,NULL);
+    close(client_fd);
 }
 
 void handle_select_command(int client_fd)
@@ -77,8 +63,3 @@ void handle_select_command(int client_fd)
 
     write(client_fd,response,strlen(response));
 }
-
-
-
-
-
