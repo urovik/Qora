@@ -1,2 +1,2 @@
 all:
-	gcc server.c main.c core.c logger.c sql_parser.c utils.c  -o my
+	gcc src/server.c src/main.c src/core.c src/logger.c src/sql_parser.c src/utils.c  -o my
