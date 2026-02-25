@@ -14,11 +14,112 @@
 #include <string.h>
 #include <errno.h>
 
+static client_t* clients = NULL;
 
 
+static int max_clients = MAX_CLIENTS;
 
 
-static void handle_client(client_t* client, int epoll_fd) {
+static int init_client_pool(int initial_size) {
+    clients = malloc(initial_size * sizeof(client_t));
+    if (!clients) {
+        fprintf(stderr, "malloc: %s\n", strerror(errno));
+        return -1;
+    }
+    max_clients = initial_size;
+    for (int i = 0; i < max_clients; i++) {
+        clients[i].client_fd = -1;
+    }
+    return 0;
+}
+
+static int expand_client_pool() {
+    int old_max = max_clients;
+    max_clients += 10;
+    client_t* temp = realloc(clients, max_clients * sizeof(client_t));
+    if (!temp) {
+        fprintf(stderr, "realloc: %s\n", strerror(errno));
+        return -1;
+    }
+    clients = temp;
+
+    // Инициализируем новые слоты
+    for (int i = old_max; i < max_clients; i++) {
+        clients[i].client_fd = -1;
+        clients[i].len_command_buffer = 0;
+        memset(clients[i].command_buffer, 0, MAX_CMD_LEN);
+        memset(clients[i].out_buf, 0, OUT_BUF);
+    }
+    return 0;
+}
+
+static void free_client(int client_idx,int epoll_fd) {
+    if (client_idx < 0 || client_idx >= max_clients) {
+        return;
+    }
+
+    int fd = clients[client_idx].client_fd;
+    if (fd <= 0) {
+        return; // Уже закрыт или невалидный
+    }
+
+    // Удаляем fd из epoll перед закрытием
+    // Удаляем из epoll перед закрытием
+    if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, NULL) == -1) {
+        perror("epoll_ctl DEL");
+    }
+    close(fd);
+
+    clients[client_idx].client_fd = -1; // Помечаем как закрытый
+
+    fprintf(stdout, "Клиент %d (fd=%d) корректно отключился\n", client_idx, fd);
+
+    // Очищаем буфер
+    clients[client_idx].len_command_buffer = 0;
+    memset(clients[client_idx].command_buffer, 0, MAX_CMD_LEN);
+    memset(clients[client_idx].out_buf, 0, OUT_BUF);
+}
+
+static int find_or_create_client(int conn_fd) {
+    // Сначала ищем свободный слот с client_fd == -1 (корректно закрытый)
+    // Поиск свободного слота во всём массиве
+    for (int i = 0; i < max_clients; i++) {
+        if (clients[i].client_fd == -1) {
+            clients[i].client_fd = conn_fd;
+            clients[i].len_command_buffer = 0;
+            memset(clients[i].command_buffer, 0, MAX_CMD_LEN);
+            memset(clients[i].out_buf, 0, OUT_BUF);
+            fprintf(stdout, "Создан новый клиент: индекс=%d, fd=%d\n", i, conn_fd);
+            return i;
+        }
+    }
+
+    // Свободных слотов нет — расширяем пул
+    int old_max = max_clients;
+    if (expand_client_pool() == -1)
+        return -1;
+
+    // Новые слоты уже инициализированы client_fd = -1 в expand_client_pool
+    // Берём первый из них
+    clients[old_max].client_fd = conn_fd;
+    clients[old_max].len_command_buffer = 0;
+    memset(clients[old_max].command_buffer, 0, MAX_CMD_LEN);
+    memset(clients[old_max].out_buf, 0, OUT_BUF);
+    fprintf(stdout, "Создан новый клиент: индекс=%d, fd=%d\n", old_max, conn_fd);
+    return old_max;
+}
+
+static int find_client_index(int fd) {
+    for (int j = 0; j < max_clients; j++) {
+        if (clients[j].client_fd == fd && clients[j].client_fd > 0) {
+            return j;
+        }
+    }
+    return -1;
+}
+
+
+static void handle_client(client_t* client, int epoll_fd,int client_idx) {
     ssize_t bytes_read;
     char* end_symbol;
     
@@ -41,7 +142,9 @@ static void handle_client(client_t* client, int epoll_fd) {
 
         if (bytes_read > 0) {
             client->len_command_buffer += bytes_read;
-        
+
+            size_t cmd_len = strlen(client->command_buffer);
+
             char* cmd_end = memchr(client->command_buffer, '\n', client->len_command_buffer);
             if (cmd_end == NULL) break; 
 
@@ -50,7 +153,7 @@ static void handle_client(client_t* client, int epoll_fd) {
             
             if (client->command_buffer[0] != 0) {
                 
-                if (strncmp(client->command_buffer, "/dt",3) == 0 && strlen(client->command_buffer) == 4) {
+                if (strncmp(client->command_buffer, "/dt",3) == 0 && cmd_len == 4) {
                     snprintf(client->out_buf, sizeof(client->out_buf), "таблицы...\n");
                     write(client->client_fd, client->out_buf, strlen(client->out_buf));
                 }
@@ -76,10 +179,11 @@ static void handle_client(client_t* client, int epoll_fd) {
 
         
         if(bytes_read == 0) {
-            printf("Клиент fd = %d отключился",client->client_fd);
-            handle_quit_command(client->client_fd,epoll_fd);
-            client->client_fd = 0;
-            client->len_command_buffer = 0;
+            //printf("Клиент fd = %d отключился\n",client->client_fd);
+            //handle_quit_command(client->client_fd,epoll_fd);
+            //client->client_fd = 0;
+            //client->len_command_buffer = 0;
+            free_client(client_idx,epoll_fd);
             return;    
             }
     
@@ -91,7 +195,6 @@ static void handle_client(client_t* client, int epoll_fd) {
                 break;
             }
             perror("Ошибка чтения");
-            handle_quit_command(client->client_fd, epoll_fd);
             return;
             }
         }
@@ -100,23 +203,16 @@ static void handle_client(client_t* client, int epoll_fd) {
 
 
     
-    
-
-
-
- 
-        
-
-
-   
-
 
 int start_server(int port){
 
     struct sockaddr_in address;
     int new_socket,epoll_fd;
     
-    static client_t clients[MAX_CLIENTS] = {0};
+    // Инициализируем пул клиентов при запуске сервера
+    if (init_client_pool(MAX_CLIENTS) == -1) {
+        exit(EXIT_FAILURE);
+    }
 
     socklen_t addrlen = sizeof(address);
 
@@ -142,7 +238,7 @@ int start_server(int port){
         
     }
 
-    if(listen(socket_fd, 128) == -1)
+    if(listen(socket_fd, 4096) == -1)
     {
         perror("listen failed");
         exit(EXIT_FAILURE);
@@ -185,21 +281,20 @@ int start_server(int port){
                     perror("accept");
                     continue;
                 }
-                int client_idx = -1;
-                for(int j = 0; j < MAX_CLIENTS; j++) {
-                    if(clients[j].client_fd == 0){
-                        client_idx = j;
-                        break;
-                    }
-                }
+
+                
+                
+                int client_idx = find_or_create_client(conn_fd);
+
+                
                 if (client_idx == -1) {
-                    write(conn_fd, "Сервер переполнен\n", 16);
+                    write(conn_fd, "Ошибка сервера\n", 15);
                     close(conn_fd);
                     continue;
                 }
                 // Инициализируем клиента
-                clients[client_idx].client_fd = conn_fd;
-                clients[client_idx].len_command_buffer = 0;
+                //clients[client_idx].client_fd = conn_fd;
+                //clients[client_idx].len_command_buffer = 0;
 
                 
                 char response_message[8192];
@@ -218,8 +313,7 @@ int start_server(int port){
                 if (is_nonblock == -1){
                     perror("error set nonblock");
                     close(conn_fd);
-                    clients[client_idx].client_fd = 0;
-                    continue;
+                    continue;   
                 } 
 
                 event.data.fd = conn_fd;
@@ -228,89 +322,53 @@ int start_server(int port){
                     {
                     perror("epoll_ctl(add client)");
                     close(conn_fd);
-                    clients[client_idx].client_fd = 0;
+                    free_client(client_idx,epoll_fd);
                     }
             
             } else{
-                
-                int client_idx = -1;
-                for(int j = 0; j < MAX_CLIENTS; j++) {
-                    if(clients[j].client_fd == events[i].data.fd){
-                        client_idx = j;
-                        break;
-                    }
-                }
-                if(client_idx == -1){
+                int client_idx = find_client_index(events[i].data.fd);
+                if (client_idx == -1) {
+                    fprintf(stderr, "Неизвестный fd=%d, пропускаем\n", events[i].data.fd);
+                    epoll_ctl(epoll_fd, EPOLL_CTL_DEL, events[i].data.fd, NULL);
                     continue;
                 }
 
-                
-
-                handle_client(&clients[client_idx], epoll_fd);
-                // Данные от клиента
-                    
-                // все это заменить функцией 
-                /*if (strncmp(buffer,"EXIT",4) == 0 || strncmp(buffer,"exit",4) == 0) {
-
-                    
-                    printf("Клиент отключился: fd=%d\n", events[i].data.fd);
+                // Проверяем, что клиент ещё активен
+                if (clients[client_idx].client_fd <= 0) {
                     epoll_ctl(epoll_fd, EPOLL_CTL_DEL, events[i].data.fd, NULL);
-                    close(events[i].data.fd); 
-                    }
-                 
-                if(strncmp(buffer,"SELECT",6) == 0 || strncmp(buffer,"select",6) == 0)
-                    {
-                    // код SELECT
-                    handle_select_command(events[i].data.fd);
-                    }
+                    continue;
+                }
 
-                if(strncmp(buffer,"CREATE",6) == 0 || strncmp(buffer,"create",6) == 0)
-                    {
-                    memset(response_message, 0, sizeof(response_message));
-                    snprintf(response_message,sizeof(response_message),"Введите имя файла для хранения данных не более 255 символов\n");
-                    write(events[i].data.fd,response_message,sizeof(response_message));
+                if (events[i].events & (EPOLLHUP | EPOLLERR | EPOLLRDHUP)) {
+                    fprintf(stderr, "Получено событие отключения для клиента %d (fd=%d)\n", client_idx, events[i].data.fd);
+                    free_client(client_idx,epoll_fd);
+                    continue;
+                }
 
-                    // перед тем как читать filename сбрасываем его чтобы там не остались лишние ланные после ошибки
-                    memset(filename,0,sizeof(filename));
-                    ssize_t n = read(events[i].data.fd,filename,sizeof(filename) - 1);
-                    
-                    /*if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                         continue;  // Нет данных сейчас
-                    }
-                    filename[n] = '\0';
-                    if(strlen(filename) > 255)
-                        {
-                        memset(response_message, 0, sizeof(response_message));
-                        snprintf(response_message,sizeof(response_message),"Введите корректное имя файла\n");
-                        write(events[i].data.fd,response_message,strlen(response_message));
-                        }
-                    create_file_from_db(events[i].data.fd,filename);
-                    } */
-
-                    //else {
-
-                    // Выводим полученные данные
-                    //printf("От клиента (fd=%d): %.*s\n", 
-                    //       events[i].data.fd, (int)bytes_read, buffer);
-
-                    // Отправляем ответ
-                    //const char *response = "Сообщение получено!\n";
-                    //write(events[i].data.fd, response, strlen(response));
-                    //}
+                if (events[i].events & EPOLLIN) {
+                    handle_client(&clients[client_idx], epoll_fd, client_idx);
+                }
+                
             }
                   
     }
     
     //закрываем while
     }
-// закрываем функцию
 
-    
-    
-    
-    
     close(epoll_fd);
     close(socket_fd);
+
+    // Очистка памяти перед завершением
+    for (int i = 0; i < max_clients; i++) {
+        if (clients[i].client_fd != 0) {
+            close(clients[i].client_fd);
+        }
+    }
+
+    free(clients);
+    clients = NULL;
+    max_clients = 0;
 
     return 0;
 }

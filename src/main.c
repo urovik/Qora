@@ -14,8 +14,8 @@ int main(int argc, char *argv[]){
     if(init_system_dir() == -1){
         exit(EXIT_FAILURE);
     } 
-    start_server(SERVER_PORT);
     log_message(LOG_LEVEL_INFO,"Сервер запущен");
+    start_server(SERVER_PORT);
 
     close_logger();
 
