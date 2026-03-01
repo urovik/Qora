@@ -51,9 +51,20 @@ void log_message(LogLevel level,char* message)
         strftime(time_buffer, sizeof(time_buffer), format, tm_info);
 
         const char* level_str = log_level_to_string(level);
+        if (level_str == NULL) {
+            level_str = "UNKNOWN";
+        }
+        if (level == LOG_LEVEL_ERROR || level == LOG_LEVEL_FATAL){
+            fprintf(global_logger.output_file,"%s [%s]: %s\n",time_buffer,level_str,message);
+            fprintf(stderr,"%s [%s]: %s\n",time_buffer,level_str,message);
+            fflush(global_logger.output_file);
+            return;
+        }
 
         fprintf(global_logger.output_file,"%s [%s]: %s\n",time_buffer,level_str,message);
+        fprintf(stdout,"%s [%s]: %s\n",time_buffer,level_str,message);
         fflush(global_logger.output_file);
+        return;
     }
 
 

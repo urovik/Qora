@@ -2,9 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "server.h"
-#include "logger.h"
-#include "core.h"
+#include "server/server.h"
+#include "core/logger.h"
+#include "core/core.h"
 
 
 
