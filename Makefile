@@ -5,6 +5,7 @@ SRCS = src/main.c \
        src/core/core.c \
        src/core/logger.c \
        src/parser/sql_parser.c \
+       src/parser/lexer.c \
        src/core/utils.c \
        src/server/handlers/client_handlers.c
 OBJS = $(SRCS:.c=.o)

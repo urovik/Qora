@@ -6,6 +6,8 @@
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
+#include <time.h>
+#include <unistd.h>
 #include <sys/epoll.h>
 
 int init_client_pool(int initial_size, client_t** clients, int* max_clients) {
@@ -128,14 +130,15 @@ void handle_client(client_t* client, int epoll_fd, int client_idx, client_t* cli
             if (cmd_end == NULL) break;
 
             *cmd_end = '\0';
-
+            // нужна отдельная функция
             if (client->command_buffer[0] != 0) {
                 if (strncmp(client->command_buffer, "/dt", 3) == 0 && cmd_len == 4) {
                     snprintf(client->out_buf, sizeof(client->out_buf), "таблицы...\n");
-            write(client->client_fd, client->out_buf, strlen(client->out_buf));
+                    write(client->client_fd, client->out_buf, strlen(client->out_buf));
+                    
                 } else {
                     snprintf(client->out_buf, sizeof(client->out_buf), "Введена неизвестная команда\n");
-            write(client->client_fd, client->out_buf, strlen(client->out_buf));
+                    write(client->client_fd, client->out_buf, strlen(client->out_buf));
                 }
             } else {
                 snprintf(client->out_buf, sizeof(client->out_buf), "Пустая команда\n");

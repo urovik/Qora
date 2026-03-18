@@ -32,6 +32,7 @@ int find_or_create_client(int conn_fd, client_t** clients, int* max_clients);
 int find_client_index(int fd, client_t* clients, int max_clients);
 
 void handle_client(client_t* client, int epoll_fd, int client_idx, client_t* clients, int max_clients);
+void execute_client_command(char* command_buffer, size_t len_command_buffer);
 
 
 
