@@ -62,7 +62,7 @@ Token next_token(Lexer* lexer){
         token.token = NUMBER;
         return token;
     }
-
+    
     if(isalpha(lexer->input_str[lexer->position]) || lexer->input_str[lexer->position] == '_'){
         int n = 0;
         while (isalnum(lexer->input_str[lexer->position]) || lexer->input_str[lexer->position] == '_')
@@ -77,6 +77,99 @@ Token next_token(Lexer* lexer){
         token.token = check_keyword(token.text);
         return token;
     }
+
+    if(lexer->input_str[lexer->position] == '<' && lexer->input_str[lexer->position + 1] == '='){
+        token.text[0] = '<';
+        token.text[1] = '=';
+        token.text[2] = '\0';
+        token.token = OPERATOR;
+        lexer->position += 2;
+        return token;
+    }
+
+    if(lexer->input_str[lexer->position] == '>' && lexer->input_str[lexer->position + 1] == '='){
+        token.text[0] = '>';
+        token.text[1] = '=';
+        token.text[2] = '\0';
+        token.token = OPERATOR;
+        lexer->position += 2;
+        return token;
+    }
+
+    if(lexer->input_str[lexer->position] == '!' && lexer->input_str[lexer->position + 1] == '='){
+        token.text[0] = '!';
+        token.text[1] = '=';
+        token.text[2] = '\0';
+        token.token = OPERATOR;
+        lexer->position += 2;
+        return token;
+    }
+
+    if(lexer->input_str[lexer->position] == '<' && lexer->input_str[lexer->position + 1] == '>'){
+        token.text[0] = '<';
+        token.text[1] = '>';
+        token.text[2] = '\0';
+        token.token = OPERATOR;
+        lexer->position += 2;
+        return token;
+    }
+
+    if(lexer->input_str[lexer->position] == '<'){
+        token.text[0] = '<';
+        token.text[1] = '\0';
+        token.token = OPERATOR;
+        lexer->position++;
+        return token;
+    } 
+
+    if(lexer->input_str[lexer->position] == '>'){
+        token.text[0] = '>';
+        token.text[1] = '\0';
+        token.token = OPERATOR;
+        lexer->position++;
+        return token;
+    }
+
+    if(lexer->input_str[lexer->position] == '='){
+        token.text[0] = '=';
+        token.text[1] = '\0';
+        token.token = OPERATOR;
+        lexer->position++;
+        return token;
+    }
+
+    if(lexer->input_str[lexer->position] == ';'){
+        token.text[0] = ';';
+        token.text[1] = '\0';
+        token.token = SEMICOLON;
+        lexer->position++;
+        return token;
+    }
+
+    if(lexer->input_str[lexer->position] == ','){
+        token.text[0] = ',';
+        token.text[1] = '\0';
+        token.token = COMMA;
+        lexer->position++;
+        return token;
+    }
+
+    if(lexer->input_str[lexer->position] == '('){
+        token.text[0] = '(';
+        token.text[1] = '\0';
+        token.token = LPAREN;
+        lexer->position++;
+        return token;
+    }
+
+    if(lexer->input_str[lexer->position] == ')'){
+        token.text[0] = ')';
+        token.text[1] = '\0';
+        token.token = RPAREN;
+        lexer->position++;
+        return token;
+    }
+
 
     
     token.text[0] = lexer->input_str[lexer->position];

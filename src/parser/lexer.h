@@ -27,7 +27,7 @@ typedef struct{
 
 
 void init_lexer(Lexer* lexer, const char* input);
-
+Token next_token(Lexer* lexer);
 TokenType check_keyword(const char* word);
 
 #endif // LEXER_H
