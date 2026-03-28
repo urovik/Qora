@@ -6,6 +6,7 @@ SRCS = src/main.c \
        src/core/logger.c \
        src/parser/sql_parser.c \
        src/parser/lexer.c \
+       src/parser/ast.c \
        src/parser/parser.c \
        src/core/utils.c \
        src/server/handlers/client_handlers.c

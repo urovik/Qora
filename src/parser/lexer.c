@@ -18,7 +18,7 @@ void init_lexer(Lexer* lexer, const char* input_str){
     lexer->position = 0;
 }
 
-TokenType check_keyword(const char* word){
+static TokenType check_keyword(const char* word){
     if(strcasecmp(word,"SELECT") == 0) return SELECT;
     if(strcasecmp(word,"FROM") == 0) return FROM;
     if(strcasecmp(word,"WHERE") == 0) return WHERE;

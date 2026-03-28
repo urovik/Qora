@@ -10,6 +10,12 @@ typedef enum{
     OP_GT,
 } Operator;
 
+typedef enum Expr_type{
+    EXPR_COMPARE,
+    EXPR_AND,
+    EXPR_OR,
+} ExprType;
+
 typedef struct Column{
     char* name;
     struct Column* next;
@@ -20,11 +26,21 @@ typedef struct Table{
 } Table;
 
 
-typedef struct Condition{
-    char* column;
-    Operator op;
-    char* value;
-} Condition;
+typedef struct Expr{
+    ExprType type;
+    union {
+        struct {
+            char* column;
+            Operator op;
+            char* value;
+        } compare;
+
+        struct {
+            struct Expr* left;
+            struct Expr* right;
+        } binary;     
+    };
+} Expr;
 
 
 typedef struct OrderBy{
@@ -35,16 +51,17 @@ typedef struct OrderBy{
 typedef struct SelectStmt{
     Column* columns;
     Table* table;
-    Condition* where;
+    Expr* where;
     OrderBy* order_by;
 
 } SelectStmt;
  
 Column* create_column(const char* name);
 Table* create_table(const char* name);
-Condition* create_condition(const char* column, Operator op, const char* value);
+Expr* create_compare_expr(const char* column, Operator op, const char* value);
+Expr* create_binary_expr(ExprType type, Expr* left, Expr* right);
 OrderBy* create_orderby(const char* column, int asc);
-SelectStmt* create_select_stmt(Column* cols, Table* table, Condition* where, OrderBy* order_by);
+SelectStmt* create_select_stmt(Column* cols, Table* table, Expr* where, OrderBy* order_by);
 
 void add_column(Column** list, Column* new_col);
 
