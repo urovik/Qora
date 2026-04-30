@@ -15,7 +15,7 @@ int main(int argc, char *argv[]){
         exit(EXIT_FAILURE);
     } 
     log_message(LOG_LEVEL_INFO,"Сервер запущен");
-    start_server(SERVER_PORT);
+    run(SERVER_PORT);
 
     close_logger();
 

@@ -78,6 +78,7 @@ Token next_token(Lexer* lexer){
         return token;
     }
 
+
     if(lexer->input_str[lexer->position] == '<' && lexer->input_str[lexer->position + 1] == '='){
         token.text[0] = '<';
         token.text[1] = '=';
@@ -166,6 +167,14 @@ Token next_token(Lexer* lexer){
         token.text[0] = ')';
         token.text[1] = '\0';
         token.token = RPAREN;
+        lexer->position++;
+        return token;
+    }
+
+    if(lexer->input_str[lexer->position] == '*'){
+        token.text[0] = '*';
+        token.text[1] = '\0';
+        token.token = STAR;
         lexer->position++;
         return token;
     }

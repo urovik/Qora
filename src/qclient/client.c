@@ -50,12 +50,12 @@ int main() {
     if (strcmp(input, "/q") == 0 || strcmp(input, "/quit") == 0) break;
 
     // Отправляем команду и разделитель
-    write(sockfd, input, strlen(input));
-    write(sockfd, "\n", 1);   // обязательно добавляем \n
+    safe_write(sockfd, input, strlen(input));
+    safe_write(sockfd, "\n", 1);   // обязательно добавляем \n
 
     // Читаем ответ сервера
     memset(buffer, 0, sizeof(buffer));
-    ssize_t bytes = read(sockfd, buffer, sizeof(buffer) - 1);
+    ssize_t bytes = safe_read(sockfd, buffer, sizeof(buffer) - 1);
     if (bytes > 0) {
         buffer[bytes] = '\0';
         printf("%s", buffer);

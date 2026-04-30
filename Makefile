@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -I./src -I./src/core -I./src/server -I./src/parser -I./src/utils 
+CFLAGS = -g -Wall -Wextra -I./src -I./src/core -I./src/server -I./src/parser -I./src/utils -I./src/wrapper
 SRCS = src/main.c \
        src/server/server.c \
        src/core/core.c \
@@ -7,9 +7,13 @@ SRCS = src/main.c \
        src/parser/sql_parser.c \
        src/parser/lexer.c \
        src/parser/ast.c \
+       src/parser/executor.c \
        src/parser/parser.c \
        src/core/utils.c \
-       src/server/handlers/client_handlers.c
+       src/core/qoraLoop.c \
+       src/core/memory.c \
+       src/core/qNetwork.c \
+       src/wrapper/wrappers.c 
 OBJS = $(SRCS:.c=.o)
 TARGET = my
 

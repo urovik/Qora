@@ -48,6 +48,10 @@ Column* parse_columns(Parser* parser){
             fprintf(stderr, "Syntax error: expected column name\n");
             exit(1);
         }
+        if(parser->currentTok.token == STAR){
+            next(parser);
+            return NULL;
+        }
         Column* col = create_column(parser->currentTok.text);
         if(head == NULL) head = tail = col;
         else{

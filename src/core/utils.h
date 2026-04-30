@@ -4,6 +4,7 @@
 
 
 int set_nonblocking_fd(int sockfd);
+void panic(const char* file, int line, const char* msg_err, ...);
 
 
 
