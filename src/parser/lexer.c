@@ -19,21 +19,11 @@ void init_lexer(Lexer* lexer, const char* input_str){
 }
 
 static TokenType check_keyword(const char* word){
-    if(strcasecmp(word,"SELECT") == 0) return SELECT;
-    if(strcasecmp(word,"FROM") == 0) return FROM;
-    if(strcasecmp(word,"WHERE") == 0) return WHERE;
-    if(strcasecmp(word,"ORDER") == 0) return ORDER;
-    if (strcasecmp(word, "BY") == 0) return BY;
-    if (strcasecmp(word, "LIMIT") == 0) return LIMIT;
-    if (strcasecmp(word, "TRUE") == 0) return TRUE;
-    if (strcasecmp(word, "FALSE") == 0) return FALSE;
-    if (strcasecmp(word, "NULL") == 0) return NULL_TOKEN;
-    if (strcasecmp(word, "OR") == 0) return OR;
-    if (strcasecmp(word, "AND") == 0) return AND; 
-    if (strcasecmp(word, "NOT") == 0) return NOT;
-    if (strcasecmp(word, "ASC") == 0) return ASC;
-    if (strcasecmp(word, "DESC") == 0) return DESC;
-    return IDENTIFIER;
+    if(strcasecmp(word,"SET") == 0) return SET;
+    if(strcasecmp(word, "EXPIRE") == 0) return EXPIRE;
+    if(strcasecmp(word, "IN") == 0) return IN;
+    return UNDEFINED;
+    
 }
 
 
@@ -79,7 +69,7 @@ Token next_token(Lexer* lexer){
     }
 
 
-    if(lexer->input_str[lexer->position] == '<' && lexer->input_str[lexer->position + 1] == '='){
+    /*if(lexer->input_str[lexer->position] == '<' && lexer->input_str[lexer->position + 1] == '='){
         token.text[0] = '<';
         token.text[1] = '=';
         token.text[2] = '\0';
@@ -178,7 +168,7 @@ Token next_token(Lexer* lexer){
         lexer->position++;
         return token;
     }
-
+    */
 
     
     token.text[0] = lexer->input_str[lexer->position];

@@ -1,11 +1,11 @@
 #include "server.h"
 #include "core/core.h"
 #include "core/utils.h"
-#include "parser/sql_parser.h"
 #include "core/logger.h"
 #include "wrapper/wrappers.h"
 #include "qoraLoop.h"
 #include "qNetwork.h"
+#include "db/qoraDb.h"
 
 
 #include <sys/socket.h>
@@ -25,10 +25,20 @@
 
 
 int run(int port) {
+
+    // инициализируем наше key-value хранилище 
+    QoraDB* DB = createQoraDb(100);
+    if(!DB){
+        panic("storage is not initializied");
+    }
+
+    /*set(DB,"name", "Юра");
+    char *val = get(DB,"name");
+    printf("%s",val);
+    */
     qEventLoop *loop = qCreateLoop(MAX_CLIENTS);
     if (!loop) {
-        fprintf(stderr, "Cannot create event loop\n");
-        return -1;
+        panic("cannot create evloop");
     }
 
     // Создаём серверный сокет
@@ -37,6 +47,7 @@ int run(int port) {
     printf("Echo server started on port %d\n", port);
     qMain(loop);  // запуск event loop
 
+    freeQoraDb(DB);
     qDeleteLoop(loop);
     close(listen_fd);
     return 0;

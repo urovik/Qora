@@ -98,7 +98,7 @@ int qProcessEvents(qEventLoop *eventLoop){
     int processed = 0, numevents;
 
     // вернет количество fd которые нуждаются в обработке
-    numevents = qApiEpoll(eventLoop);
+    numevents = qApipoll(eventLoop);
 
     for(int i = 0; i < numevents; i++){
         int fd = eventLoop->fired[i].fd;

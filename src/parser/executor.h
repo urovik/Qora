@@ -1,9 +1,10 @@
 #ifndef EXECUTOR_H
 #define EXECUTOR_H
 
-#include "parser/ast.h"
+#include "ast.h"
 
-void execute_select(SelectStmt* stmt, int client_fd);
-void execute_create_table(const char* tablename, int client_fd);
+
+int execute_set_value(SetAST set_query);
+
 
 #endif // EXECUTOR_H

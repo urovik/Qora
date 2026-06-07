@@ -16,9 +16,6 @@ void init_parser(Parser* parser, Lexer* lexer);
 void next(Parser* parser);
 void expect(Parser* parser, TokenType type);
  
-Column* parse_columns(Parser* parser);
-Expr* parse_expr(Parser* parser); 
-OrderBy* parse_order_by(Parser* parser);
-SelectStmt* parse_select(Parser* parser);
+SetAST* parse_set(Parser* parser);
 
 #endif // PARSER_H

@@ -44,7 +44,7 @@ void acceptTcpHandler(qEventLoop* evLoop,int listen_sock, void *clientData, int 
     set_nonblocking_fd(client_fd);
 
     qCreateFileEvent(evLoop, client_fd, Q_READABLE, read_handler, NULL);
-    printf("accept new client fd = %d", client_fd);
+    printf("accept new client fd = %d\n", client_fd);
 
 }
 

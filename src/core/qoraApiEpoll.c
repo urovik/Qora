@@ -91,13 +91,13 @@ static void qApiDelEvent(qEventLoop* qEventLoop, int fd, int delmask) {
 }
 
 
-static int qApiEpoll(qEventLoop* qEventLoop) {
+static int qApipoll(qEventLoop* qEventLoop) {
     qApiState* state = qEventLoop->apidata;
     int nevents = 0;  // инициализация
     int queue_fd = epoll_wait(state->epfd, state->events, qEventLoop->size, -1);
     if (queue_fd > 0) {
         nevents = queue_fd;
-        for (int i = 0; i < nevents; i++) {   // исправлено: i=0
+        for (int i = 0; i < nevents; i++) {   
             int mask = 0;
             struct epoll_event* e = state->events + i;
             if (e->events & EPOLLIN) mask |= Q_READABLE;
