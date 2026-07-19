@@ -11,25 +11,83 @@
 #include "wrappers.h"
 
 
-// Обработчик чтения данных от клиента (эхо)
+
+
+/*
+ * Copyright (c) 2026, urovik
+ * Licensed under the BSD-3-Clause license. See LICENSE file in the root directory.
+ */
+
+
 void read_handler(qEventLoop *loop, int fd, void *data, int mask) {
-    (void)data; (void)mask;
+    (void)mask;
+    Client *c = (Client*)data;
+    if (!c) { close(fd); return; }
+    c->last_activity_us = get_monotonic_time_us();
+
     char buf[4096];
     ssize_t n = safe_read(fd, buf, sizeof(buf));
     if (n <= 0) {
         if (n == 0 || (errno != EAGAIN && errno != EWOULDBLOCK)) {
-            // Клиент закрыл соединение или ошибка
             qDeleteFileEvent(loop, fd, Q_READABLE | Q_WRITABLE);
             close(fd);
+            qfree(c);
             printf("Client disconnected: fd=%d\n", fd);
         }
         return;
     }
-    // Отправляем данные обратно (эхо)
+
+    // Тут будет парсинг команды. Пока для теста можно сделать так:
+    // Если пришла строка "SELECT 1", переключаем БД.
+    // Это просто пример, чтобы увидеть, что переключение работает.
+    if (strncmp(buf, "SELECT ", 7) == 0) {
+        int idx = atoi(buf + 7);
+        if (idx >= 0 && idx < g_server->dbnum) {
+            c->db = g_server->dbs[idx];
+            safe_write(fd, "OK switched\r\n", 13);
+            //logger_info("client fd=%d switched to db=%d", fd, idx);
+        } else {
+            safe_write(fd, "-ERR invalid DB\r\n", 16);
+        }
+        return;
+    }
+
+    // Пример простой команды: SET key value
+    // Для реального проекта тут нужен нормальный парсер RESP.
+    // А пока — заглушка: если строка начинается с "SET ", делаем set()
+    if (strncmp(buf, "SET ", 4) == 0) {
+        char *sp = strchr(buf + 4, ' ');
+        if (!sp) { safe_write(fd, "-ERR syntax\r\n", 12); return; }
+        *sp = '\0';
+        char *key = buf + 4;
+        char *value = sp + 1;
+        value[strcspn(value, "\r\n")] = '\0'; // обрезать CRLF
+
+        int rc = set(c->db, key, value);
+        if (rc == 0) safe_write(fd, "+OK\r\n", 5);
+        else safe_write(fd, "-ERR set failed\r\n", 15);
+        return;
+    }
+
+    if (strncmp(buf, "GET ", 4) == 0) {
+        char *key = buf + 4;
+        key[strcspn(key, "\r\n")] = '\0';
+
+        char *val = get(c->db, key);
+        if (val) {
+            char resp[4096];
+            size_t len = snprintf(resp, sizeof(resp), "$%zu\r\n%s\r\n", strlen(val), val);
+            safe_write(fd, resp, len);
+        } else {
+            safe_write(fd, "$-1\r\n", 5); // nil в стиле RESP
+        }
+        return;
+    }
+
+    // По умолчанию — эхо (для отладки)
     safe_write(fd, buf, n);
-    // Для демонстрации можно также добавить обработку записи,
-    // но здесь эхо отправляется сразу в том же вызове.
 }
+
 
 void acceptTcpHandler(qEventLoop* evLoop,int listen_sock, void *clientData, int mask){
     struct sockaddr_in addr_client;
@@ -42,8 +100,23 @@ void acceptTcpHandler(qEventLoop* evLoop,int listen_sock, void *clientData, int 
     }
 
     set_nonblocking_fd(client_fd);
+    // Создаём клиента
+    Client *c = qmalloc(sizeof(Client));
+    if (!c) { close(client_fd); panic("malloc client"); }
 
-    qCreateFileEvent(evLoop, client_fd, Q_READABLE, read_handler, NULL);
+    c->fd = client_fd;
+    memset(c->rbuf, 0, sizeof(c->rbuf));
+    memset(c->wbuf, 0, sizeof(c->wbuf));
+
+    // Привязываем к первой БД из пула
+    c->db = g_server->dbs[0];
+    // получаем время последней активности клиента
+    c->last_activity_us = get_monotonic_time_us();
+
+    // Регистрируем чтение; clientData = клиент, чтобы в read_handler был доступ к c->db
+    qCreateFileEvent(evLoop, client_fd, Q_READABLE, read_handler, c);
+
+    
     printf("accept new client fd = %d\n", client_fd);
 
 }

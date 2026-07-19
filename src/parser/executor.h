@@ -2,9 +2,11 @@
 #define EXECUTOR_H
 
 #include "ast.h"
+#include "parser.h"
+#include "qoraDb.h"
 
 
-int execute_set_value(SetAST set_query);
+int execute_set_value(QoraDB* qoraDb, Parser* parser);
 
 
 #endif // EXECUTOR_H

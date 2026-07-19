@@ -10,11 +10,18 @@ typedef struct Parser{
     Token currentTok;
 } Parser;
 
+typedef enum {
+    PARSE_OK,
+    PARSE_ERR_SYNTAX,
+    PARSE_ERR_MEMORY,
+    PARSE_ERR_UNEXPECTED_EOF,
+} ParseResult;
+
 
 void init_parser(Parser* parser, Lexer* lexer);
 
 void next(Parser* parser);
-void expect(Parser* parser, TokenType type);
+ParseResult expect(Parser* parser, TokenType type);
  
 SetAST* parse_set(Parser* parser);
 

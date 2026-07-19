@@ -2,11 +2,12 @@
 #define CORE_H
 
 #include <utils.h>
+#include <server.h>
 
 // макрос для паники
 #define panic(...) panic(__FILE__,__LINE__, __VA_ARGS__)
 
-
+extern Qserver *g_server;
 
 
 void create_file_from_db(int client_fd, char filename[256]);

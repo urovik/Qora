@@ -6,6 +6,12 @@
 #define Q_WRITABLE 0x0002 // 2 бит готов для записи (fd)
 #define Q_ERROR -1 
 #define Q_OK 0
+#define Q_TIMER_DEL 1
+#define TIMER_ACTIVE 0
+#define EMPTY_TIMERS -1
+
+
+#include <stdint.h>
 
 typedef struct qEventLoop qEventLoop;
 // Тип функции-обработчика (указатель на функцию)
@@ -25,6 +31,17 @@ typedef struct qFiredEvent {
     int mask;
 } qFiredEvent;
 
+typedef struct qTimerEvent
+{
+    long id;
+    int deleted; // флаг для таймера
+    qFileProc proc;
+    int64_t when_ms;
+    void* Client;
+
+} qTimerEvent;
+
+
 typedef struct qEventLoop{
 
     int maxfd; // самый наивысший fd
@@ -34,11 +51,19 @@ typedef struct qEventLoop{
     int nevents; // количество зарегистрированных fd
     qFileEvent* events;
     qFiredEvent* fired;
+    qTimerEvent** timers; // пока что просто массив, нужна структура по лучше, либо мин-хип, лиюо попробовать в dict обернуть чтобы o(1)
+    int size_timers;
+    int count_timers; // счетчик активных таймеров
 
 } qEventLoop;
 
 
-
+// работа с таймерами
+void add_timer(qEventLoop* loop, int64_t when, qFileProc proc, void* data);
+void cancel_timer(qEventLoop* loop, int id);
+void free_timer(qTimerEvent* timer); // под вопросом
+int64_t search_timer(qEventLoop* loop);
+void process_timers(qEventLoop* eventLoop);
 
 qEventLoop *qCreateLoop(int size);
 void qDeleteLoop(qEventLoop *loop);
@@ -46,5 +71,7 @@ int qCreateFileEvent(qEventLoop *loop, int fd, int mask, qFileProc proc, void *c
 void qDeleteFileEvent(qEventLoop *loop, int fd, int delmask);
 int qProcessEvents(qEventLoop *loop);
 void qMain(qEventLoop *loop);
+
+
 
 #endif // QORALOOP_H

@@ -1,4 +1,7 @@
-/*
- * Copyright (c) 2026, urovik
- * Licensed under the BSD-3-Clause license. See LICENSE file in the root directory.
- */
+# [Название твоего хранилища]
+
+ai-key-value storage (Qora) - хранилище которое содержит в себе ai агента анализируещего данные которые проходят через хранилище
+
+## License
+
+Licensed under the BSD-3-Clause License. See the `LICENSE` file for details.

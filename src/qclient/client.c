@@ -6,6 +6,14 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+
+
+/*
+ * Copyright (c) 2026, urovik
+ * Licensed under the BSD-3-Clause license. See LICENSE file in the root directory.
+ */
+
+
 #define PORT 5960 // Порт вашего сервера
 #define HOST "127.0.0.1"
 

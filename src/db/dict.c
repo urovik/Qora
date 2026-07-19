@@ -7,6 +7,12 @@
 #include <string.h>
 
 
+/*
+ * Copyright (c) 2026, urovik
+ * Licensed under the BSD-3-Clause license. See LICENSE file in the root directory.
+ */
+
+
 char* getValueFromDictByKey(Dict* storage, char* key){
 
     if(key == NULL){
@@ -43,10 +49,6 @@ int saveDataFromDict(Dict* storage, char* key, char* value){
         return -1;
     }
 
-    /*if(getValueFromDictByKey(storage, key) != NULL){
-        fprintf(stdout,"key exists from database");
-        return -1;
-    }*/
 
     size_t len_key = strlen(key);
     int hash_index = MurmurHash2(key, len_key);
@@ -54,17 +56,32 @@ int saveDataFromDict(Dict* storage, char* key, char* value){
 
     // получаем по hash_index Node в словаре в которю будем складывать ключ и значение
     DictNode* Node = storage->h_table[index];
+
+    // Ищем существующий ключ для обновления (или чтобы запретить перезапись)
+    while(Node != NULL) {
+        if(strcmp(Node->key, key) == 0) {
+            // ключ уже есть: либо обновляем, либо возвращаем ошибку
+            qfree(Node->value);
+            Node->value = strdup(value);
+            if(!Node->value) return -1;
+            return 0;
+        }
+        Node = Node->next;
+    }
+
     if(Node == NULL){
-
-
         DictNode* NewNode = qmalloc(sizeof(DictNode));
         NewNode->key = strdup(key);
         NewNode->value = strdup(value);
+        if(!NewNode->key || !NewNode->value) {
+        qfree(NewNode->key); qfree(NewNode->value); qfree(NewNode);
+        return -1;
+        }
         NewNode->next = NULL;
         storage->h_table[index] = NewNode;
     }
 
-    // реализовать цепочку проверить равен ли ключ NULL далее в цикле while идти до конца(пока так может додумаю как правильнее)
+   
 
 
     return 0;

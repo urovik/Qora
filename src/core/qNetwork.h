@@ -2,6 +2,11 @@
 #define QNETWORK_H
 
 #include "qoraLoop.h"
+#include "client.h"
+#include "memory.h"
+
+#include <string.h>
+
 
 
 int listenServer(qEventLoop* evLoop, int port); // создает слущающий сокет

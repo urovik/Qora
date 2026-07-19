@@ -9,6 +9,14 @@
 #include <core/memory.h>
 
 
+
+/*
+ * Copyright (c) 2026, urovik
+ * Licensed under the BSD-3-Clause license. See LICENSE file in the root directory.
+ */
+
+
+
 typedef struct {
     int epfd;
     struct epoll_event *events;
@@ -91,10 +99,10 @@ static void qApiDelEvent(qEventLoop* qEventLoop, int fd, int delmask) {
 }
 
 
-static int qApipoll(qEventLoop* qEventLoop) {
+static int qApipoll(qEventLoop* qEventLoop, int64_t timeout_us) {
     qApiState* state = qEventLoop->apidata;
     int nevents = 0;  // инициализация
-    int queue_fd = epoll_wait(state->epfd, state->events, qEventLoop->size, -1);
+    int queue_fd = epoll_wait(state->epfd, state->events, qEventLoop->size, timeout_us);
     if (queue_fd > 0) {
         nevents = queue_fd;
         for (int i = 0; i < nevents; i++) {   
@@ -107,7 +115,7 @@ static int qApipoll(qEventLoop* qEventLoop) {
             qEventLoop->fired[i].mask = mask;
         }
     } else if (queue_fd == -1 && errno != EINTR) {
-        panic("aeApiPoll: epoll_wait, %s", strerror(errno));
+        panic("qApiPoll: epoll_wait, %s", strerror(errno));
     }
     return nevents;
 }

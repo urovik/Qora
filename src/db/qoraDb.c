@@ -2,6 +2,13 @@
 #include <memory.h>
 #include <stdlib.h>
 
+
+/*
+ * Copyright (c) 2026, urovik
+ * Licensed under the BSD-3-Clause license. See LICENSE file in the root directory.
+ */
+
+
 QoraDB* createQoraDb(int size){
 
     QoraDB* db = (QoraDB*) qmalloc(sizeof(QoraDB));

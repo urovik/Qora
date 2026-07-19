@@ -1,5 +1,6 @@
 CC = gcc
-CFLAGS = -g -Wall -Wextra -I./src -I./src/core -I./src/server -I./src/parser -I./src/utils -I./src/wrapper -I./src/db
+CFLAGS = -g -Wall -Wextra -D_POSIX_C_SOURCE=200809L -I./src -I./src/core -I./src/server -I./src/parser -I./src/utils -I./src/wrapper -I./src/db
+LDFLAGS = -lrt
 SRCS = src/main.c \
        src/server/server.c \
        src/core/core.c \
@@ -10,6 +11,7 @@ SRCS = src/main.c \
        src/parser/parser.c \
        src/core/utils.c \
        src/core/qoraLoop.c \
+       src/core/callback.c \
        src/core/memory.c \
        src/core/qNetwork.c \
        src/wrapper/wrappers.c \
@@ -20,7 +22,7 @@ OBJS = $(SRCS:.c=.o)
 TARGET = my
 
 $(TARGET): $(OBJS)
-	$(CC) -o $(TARGET) $(OBJS)
+	$(CC) $(LDFLAGS) -o $(TARGET) $(OBJS)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@

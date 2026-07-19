@@ -13,6 +13,7 @@ typedef struct {
 
 
 SetAST* create_set(char *key, char* value, int TTL);
+void freeSetAST(SetAST* ast);
 
 
 

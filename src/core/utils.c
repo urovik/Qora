@@ -1,10 +1,12 @@
 #include "utils.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <stdarg.h>
+
+
+/*
+ * Copyright (c) 2026, urovik
+ * Licensed under the BSD-3-Clause license. See LICENSE file in the root directory.
+ */
+
 
 
 int set_nonblocking_fd(int sockfd){
@@ -87,3 +89,10 @@ unsigned int MurmurHash2 ( char* key, unsigned int len)
 }
 
 
+
+int64_t get_monotonic_time_us(void){
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts); // так получаем время в наносекундах нам надо микросекунды
+    // tv_nsec — в наносекундах, делим на 1000 → получаем микросекунды
+    return (int64_t)ts.tv_sec * 1000000LL + ts.tv_nsec / 1000;
+}

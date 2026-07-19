@@ -9,6 +9,16 @@
 #include <sys/types.h>
 #include <errno.h>
 
+
+/*
+ * Copyright (c) 2026, urovik
+ * Licensed under the BSD-3-Clause license. See LICENSE file in the root directory.
+ */
+
+
+
+Qserver *g_server = NULL;
+
 static int init_all_system_dir(){
     DIR* dir;
     const char* name_all_system_dir[] = {"base","qlogs"};

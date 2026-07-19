@@ -5,7 +5,8 @@
 #include "wrapper/wrappers.h"
 #include "qoraLoop.h"
 #include "qNetwork.h"
-#include "db/qoraDb.h"
+#include "memory.h"
+
 
 
 #include <sys/socket.h>
@@ -18,36 +19,58 @@
 #include <errno.h>
 
 
-#define MAX_CLIENTS 10000
 
-
+/*
+ * Copyright (c) 2026, urovik
+ * Licensed under the BSD-3-Clause license. See LICENSE file in the root directory.
+ */
 
 
 
 int run(int port) {
 
-    // инициализируем наше key-value хранилище 
-    QoraDB* DB = createQoraDb(100);
-    if(!DB){
-        panic("storage is not initializied");
+    // инициализируем наши key-value хранилище 
+    Qserver server = {0};
+    server.dbnum = MAX_DB;
+
+    // аллоцируем массив указателей (сами БД пока не созданы)
+    server.dbs = qcalloc(server.dbnum, sizeof(QoraDB*));
+    if (!server.dbs) panic("cannot alloc dbs array");
+
+    // создаём каждую БД отдельно
+    for (int i = 0; i < server.dbnum; ++i) {
+        server.dbs[i] = createQoraDb(MAX_SIZE_DB);
+        if (!server.dbs[i]) {
+            // откат: освобождаем уже созданные
+            for (int j = 0; j < i; ++j) freeQoraDb(server.dbs[j]);
+            qfree(server.dbs);
+            panic("cannot create db %d", i);
+        }
     }
 
-    /*set(DB,"name", "Юра");
-    char *val = get(DB,"name");
-    printf("%s",val);
-    */
+    
     qEventLoop *loop = qCreateLoop(MAX_CLIENTS);
     if (!loop) {
         panic("cannot create evloop");
     }
-
+    
     // Создаём серверный сокет
     int listen_fd = listenServer(loop, SERVER_PORT);
 
     printf("Echo server started on port %d\n", port);
+
+    // ВАЖНО: нужно как-то протащить server в обработчики.
+    // Самый чистый способ: сделать глобальный указатель на сервер
+    // или хранить его внутри loop. Для старта проще глобальный.
+    extern Qserver *g_server;
+    g_server = &server;
+    
     qMain(loop);  // запуск event loop
 
-    freeQoraDb(DB);
+     // очистка
+    for (int i = 0; i < server.dbnum; ++i) {
+        freeQoraDb(server.dbs[i]);
+    }
     qDeleteLoop(loop);
     close(listen_fd);
     return 0;
