@@ -13,6 +13,7 @@
 
 #include <stdint.h>
 
+
 typedef struct qEventLoop qEventLoop;
 // Тип функции-обработчика (указатель на функцию)
 typedef void (*qFileProc)(qEventLoop *eventLoop, int fd, void *clientData, int mask);
@@ -58,11 +59,6 @@ typedef struct qEventLoop{
 } qEventLoop;
 
 
-// работа с таймерами
-void add_timer(qEventLoop* loop, int64_t when, qFileProc proc, void* data);
-void cancel_timer(qEventLoop* loop, int id);
-void free_timer(qTimerEvent* timer); // под вопросом
-int64_t search_timer(qEventLoop* loop);
 void process_timers(qEventLoop* eventLoop);
 
 qEventLoop *qCreateLoop(int size);
