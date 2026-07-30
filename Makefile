@@ -11,6 +11,7 @@ SRCS = src/main.c \
        src/parser/parser.c \
        src/core/utils.c \
        src/core/qoraLoop.c \
+       src/core/timers.c \
        src/core/callback.c \
        src/core/memory.c \
        src/core/qNetwork.c \

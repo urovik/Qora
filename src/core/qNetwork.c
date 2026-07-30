@@ -9,7 +9,7 @@
 #include "qoraLoop.h"
 #include "qNetwork.h"
 #include "wrappers.h"
-
+#include "callback.h"
 
 
 
@@ -25,9 +25,20 @@ void read_handler(qEventLoop *loop, int fd, void *data, int mask) {
     if (!c) { close(fd); return; }
     c->last_activity_us = get_monotonic_time_us();
 
+    // перезапускаем таймер клиента, чтобы отсчет времени начался заново
+    restart_client_timer(loop, c);
+
+
+    // переделать на буфер клиента
     char buf[4096];
     ssize_t n = safe_read(fd, buf, sizeof(buf));
     if (n <= 0) {
+
+        if(c->timer_id >= 0){
+            cancel_timer(loop, c->timer_id);
+            c->timer_id = -1;
+        } 
+
         if (n == 0 || (errno != EAGAIN && errno != EWOULDBLOCK)) {
             qDeleteFileEvent(loop, fd, Q_READABLE | Q_WRITABLE);
             close(fd);
@@ -83,9 +94,7 @@ void read_handler(qEventLoop *loop, int fd, void *data, int mask) {
         }
         return;
     }
-
-    // По умолчанию — эхо (для отладки)
-    safe_write(fd, buf, n);
+    add_timer(loop, CLIENT_TIMEOUT_MS, client_timeout, c);
 }
 
 
@@ -112,10 +121,12 @@ void acceptTcpHandler(qEventLoop* evLoop,int listen_sock, void *clientData, int 
     c->db = g_server->dbs[0];
     // получаем время последней активности клиента
     c->last_activity_us = get_monotonic_time_us();
+    c->timer_id = -1;
 
     // Регистрируем чтение; clientData = клиент, чтобы в read_handler был доступ к c->db
     qCreateFileEvent(evLoop, client_fd, Q_READABLE, read_handler, c);
 
+    restart_client_timer(evLoop, c);
     
     printf("accept new client fd = %d\n", client_fd);
 

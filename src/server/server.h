@@ -1,7 +1,7 @@
 #ifndef SERVER_H
 #define SERVER_H
 
-#include "db/qoraDb.h"
+#include "../db/qoraDb.h"
 
 
 #define SERVER_PORT 5960
