@@ -1,8 +1,8 @@
 #ifndef QORADB_H
 #define QORADB_H
 
-#include <types.h>
-#include <dict.h>
+#include "types.h"
+#include "dict.h"
 
 typedef struct{
     

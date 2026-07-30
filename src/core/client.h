@@ -14,6 +14,7 @@ typedef struct Client{
     char wbuf[1024];
     QoraDB* db;
     int64_t last_activity_us; // время последей активности пользоавтателя
+    int timer_id; // идентификатор таймера для клиента
 
 } Client;
 

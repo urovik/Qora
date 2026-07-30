@@ -26,7 +26,7 @@ typedef struct Logger
 extern Logger global_logger;
 
 void init_logger(const char* output_filename,LogLevel level);
-void log_message(LogLevel level,char* message);
+void log_message(LogLevel level, const char* format, ...);
 
 const char* log_level_to_string(LogLevel level);
 

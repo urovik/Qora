@@ -19,7 +19,7 @@
 
 Qserver *g_server = NULL;
 
-static int init_all_system_dir(){
+int init_all_system_dir(){
     DIR* dir;
     const char* name_all_system_dir[] = {"base","qlogs"};
     size_t len_all_system_dir = sizeof(name_all_system_dir) / sizeof(name_all_system_dir[0]);
