@@ -1,7 +1,7 @@
 #ifndef DICT_H
 #define DICT_H
 
-#include <types.h>
+#include "types.h"
 
 // нужны бы свои ответы, в идеале задуматься о своем протоколе qpro
 

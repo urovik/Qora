@@ -4,7 +4,7 @@
 #include "qoraLoop.h"
 #include "client.h"
 #include "memory.h"
-
+#include "callback.h"
 #include <string.h>
 
 

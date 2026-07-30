@@ -15,6 +15,8 @@
 
 
 int main(int argc, char *argv[]){
+    (void)argc;
+    (void)argv;
 
     init_logger(QORA_LOGS_FILENAME,LOG_LEVEL_DEBUG);
     if(init_system_dir() == -1){

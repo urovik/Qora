@@ -2,9 +2,9 @@
 #include "memory.h"
 #include "client.h"
 
-#include "qoraApiEpoll.c"
-#include "timers.c" // вклеиваем файл чтобы не городить много файлов и не получит циклических зависимостей, так как timers.c использует qEventLoop из qoraLoop.c, а в qEventLoop есть массив таймеров, который использует qTimerEvent из timers.c
+#include "qoraApiEpoll.c"   
 #include <errno.h>
+#include "logger.h"
 
 
 
@@ -15,26 +15,43 @@
 
 
 
- void process_timers(qEventLoop* eventLoop) {
+void process_timers(qEventLoop* eventLoop) {
     if (!eventLoop) return;
-
-    int64_t now_us = get_monotonic_time_us();
-
-    // Проходим по всем таймерам и выполняем те, что просрочены
+    
+    int64_t now_ms = get_monotonic_time_us() / 1000;
+    
+    
+    
     for (int i = 0; i < eventLoop->size_timers; i++) {
         qTimerEvent* t = eventLoop->timers[i];
         if (!t || t->deleted != TIMER_ACTIVE) continue;
+        
+       
+        
+        // Проверяем, не истек ли таймер
+        if (now_ms >= t->when_ms) {
 
-        if (now_us >= t->when_ms * 1000) { // сравниваем в микросекундах
-            // Выполняем колбэк
+            
             if (t->proc) {
-                t->proc(eventLoop, -1, t->Client, 0); // fd = -1, mask = 0 — по смыслу это событие таймера
+                int client_deleted = t->proc(eventLoop, -1, t->Client, 0);
+                
+                if (client_deleted == 1) {
+                    t->deleted = Q_TIMER_DEL;
+                    eventLoop->count_timers--;
+                    free_timer(t);
+                    eventLoop->timers[i] = NULL;
+
+                } else {
+                    // Перезапускаем таймер
+                    t->when_ms = now_ms + CLIENT_TIMEOUT_MS;
+                    
+                }
+            } else {
+                t->deleted = Q_TIMER_DEL;
+                eventLoop->count_timers--;
+                free_timer(t);
+                eventLoop->timers[i] = NULL;
             }
-            // Помечаем как удалённый
-            t->deleted = Q_TIMER_DEL;
-            eventLoop->count_timers--;
-            free_timer(t);
-            eventLoop->timers[i] = NULL;
         }
     }
 }
@@ -139,30 +156,33 @@ void qDeleteFileEvent(qEventLoop *eventLoop, int fd, int delmask){
 int qProcessEvents(qEventLoop *eventLoop){
     int processed = 0, numevents;
 
-    int64_t timeout_us = -1;
+    
+
+    int64_t timeout_ms = -1;
     if(eventLoop->count_timers > 0){
         int64_t now = get_monotonic_time_us() / 1000; // получаем текущее время в миллисекундах
         int64_t when_ms = search_timer(eventLoop); // находим близжайший таймер для срабатывания
 
         if(when_ms == EMPTY_TIMERS){
-            timeout_us = -1;
+
+            timeout_ms = -1;
         }
 
         if (now >= when_ms){
-            timeout_us = 0; // обрабатываем таймеры сейчас же 
+            timeout_ms = 0; // обрабатываем таймеры сейчас же 
         }
         // рассчитаем задержку
         else{
             int64_t delay_ms = when_ms - now;
-            timeout_us = delay_ms * 1000;
+            timeout_ms = delay_ms;          // миллисекунды
         }
     }
 
 
     // вернет количество fd которые нуждаются в обработке
-    numevents = qApipoll(eventLoop, timeout_us);
+    numevents = qApipoll(eventLoop, timeout_ms);
 
-    if(timeout_us == 0){
+    if(timeout_ms == 0){
         // обрабытываем таймеры
         process_timers(eventLoop);
     }

@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <time.h>
+#include <stdarg.h>
 
     
 
@@ -44,35 +45,38 @@ void init_logger(const char* output_filename,LogLevel level)
     }
 
 
-void log_message(LogLevel level,char* message)
-    {
-        if(level < global_logger.level) return;
-        if(global_logger.output_file == NULL) return;
+void log_message(LogLevel level, const char* format, ...) {
+    if(level < global_logger.level) return;
+    if(global_logger.output_file == NULL) return;
 
-        time_t time_now = time(NULL);
-        struct tm* tm_info = localtime(&time_now);
-        
-        char time_buffer[20];
-        const char* format = "%Y-%m-%d %H:%M:%S";
-        strftime(time_buffer, sizeof(time_buffer), format, tm_info);
+    va_list args1, args2;
+    va_start(args1, format);
+    va_copy(args2, args1);  // Копируем для двойного использования
 
-        const char* level_str = log_level_to_string(level);
-        if (level_str == NULL) {
-            level_str = "UNKNOWN";
-        }
-        if (level == LOG_LEVEL_ERROR || level == LOG_LEVEL_FATAL){
-            fprintf(global_logger.output_file,"%s [%s]: %s\n",time_buffer,level_str,message);
-            fprintf(stderr,"%s [%s]: %s\n",time_buffer,level_str,message);
-            fflush(global_logger.output_file);
-            return;
-        }
+    time_t time_now = time(NULL);
+    struct tm* tm_info = localtime(&time_now);
+    
+    char time_buffer[20];
+    strftime(time_buffer, sizeof(time_buffer), "%Y-%m-%d %H:%M:%S", tm_info);
 
-        fprintf(global_logger.output_file,"%s [%s]: %s\n",time_buffer,level_str,message);
-        fprintf(stdout,"%s [%s]: %s\n",time_buffer,level_str,message);
-        fflush(global_logger.output_file);
-        return;
-    }
-
+    const char* level_str = log_level_to_string(level);
+    
+    // Печатаем в файл
+    fprintf(global_logger.output_file, "%s [%s]: ", time_buffer, level_str);
+    vfprintf(global_logger.output_file, format, args1);
+    fprintf(global_logger.output_file, "\n");
+    fflush(global_logger.output_file);
+    
+    // Печатаем в консоль
+    FILE* output = (level == LOG_LEVEL_ERROR || level == LOG_LEVEL_FATAL) ? stderr : stdout;
+    fprintf(output, "%s [%s]: ", time_buffer, level_str);
+    vfprintf(output, format, args2);
+    fprintf(output, "\n");
+    fflush(output);
+    
+    va_end(args1);
+    va_end(args2);
+}
 
 void close_logger()
 {

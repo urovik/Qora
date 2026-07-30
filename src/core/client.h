@@ -24,6 +24,7 @@ typedef struct Client{
     size_t size_wbuf;
     QoraDB* db;
     int64_t last_activity_us; // время последей активности пользоавтателя
+    int timer_id; // идентификатор таймера для клиента
 
 } Client;
 

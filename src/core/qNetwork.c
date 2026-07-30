@@ -9,7 +9,7 @@
 #include "qoraLoop.h"
 #include "qNetwork.h"
 #include "wrappers.h"
-
+#include "callback.h"
 
 
 
@@ -160,10 +160,12 @@ void acceptTcpHandler(qEventLoop* evLoop,int listen_sock, void *clientData, int 
     c->db = g_server->dbs[0];
     // получаем время последней активности клиента
     c->last_activity_us = get_monotonic_time_us();
+    c->timer_id = -1;
 
     // Регистрируем чтение; clientData = клиент, чтобы в read_handler был доступ к c->db
     qCreateFileEvent(evLoop, client_fd, Q_READABLE, read_handler, c);
 
+    restart_client_timer(evLoop, c);
     
     printf("accept new client fd = %d\n", client_fd);
 
