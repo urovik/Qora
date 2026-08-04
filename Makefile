@@ -10,6 +10,7 @@ SRCS = src/main.c \
        src/parser/executor.c \
        src/parser/parser.c \
        src/core/utils.c \
+       src/core/client.c \
        src/core/qoraLoop.c \
        src/core/callback.c \
        src/core/memory.c \
