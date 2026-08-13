@@ -19,9 +19,6 @@ int main(int argc, char *argv[]){
     (void)argv;
 
     init_logger(QORA_LOGS_FILENAME,LOG_LEVEL_DEBUG);
-    if(init_system_dir() == -1){
-        exit(EXIT_FAILURE);
-    } 
     log_message(LOG_LEVEL_INFO,"Сервер запущен");
     run(SERVER_PORT);
 
